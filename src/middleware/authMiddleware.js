@@ -1,0 +1,17 @@
+const jwt =require("jsonwebtoken")
+
+module.exports=function(req,res,next){
+    try {
+        //get token from header
+        const token=req.header("Authorization")
+               if (!token){
+            return res.status(401).json("No token, authorization denied")
+        }
+        //verify token
+        const verified=jwt.verify(token,process.env.JWT_SECRET)
+        req.userId = verified.user_id  
+        next()//allows request to continue
+    } catch (error) {
+        res.status(401).json("Invalid Token")
+    }
+}
