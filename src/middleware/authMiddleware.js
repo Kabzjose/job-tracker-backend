@@ -8,8 +8,9 @@ module.exports=function(req,res,next){
             return res.status(401).json("No token, authorization denied")
         }
         //verify token
-        const verified=jwt.verify(token,process.env.JWT_SECRET)
-        req.userId = verified.user_id  
+        const verified=jwt.verify(token.replace("Bearer ",""),process.env.JWT_SECRET)
+        req.user_id = verified.user_id
+        console.log("Authenticated user ID:", req.user_id)
         next()//allows request to continue
     } catch (error) {
         res.status(401).json("Invalid Token")

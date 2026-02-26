@@ -1,4 +1,4 @@
-const express =require("express")
+
 
 const db=require("../db")
 const jwt =require("jsonwebtoken")
@@ -58,7 +58,7 @@ const login = async (req, res) => {
 
             //create token
             const token =jwt.sign(
-                {userID: user.rows[0].user_id},
+                {user_id: user.rows[0].user_id},
                 process.env.JWT_SECRET,
                 {expiresIn:"24h"}
             )
