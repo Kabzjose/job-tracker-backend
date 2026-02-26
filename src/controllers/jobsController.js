@@ -25,8 +25,7 @@ const addJob = async (req, res) => {
             "INSERT INTO jobs (user_id,title,company,location,date_applied,status) VALUES($1,$2,$3,$4,$5,$6) RETURNING *",
             [req.user_id, title, company, location, date_applied, status]
         )
-        console.log("BODY:", req.body)
-        console.log("USER ID:", req.user_id)
+        
         res.json(newJob.rows[0])
 
     } catch (error) {
