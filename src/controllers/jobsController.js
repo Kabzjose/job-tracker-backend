@@ -1,9 +1,9 @@
 
 const db = require("../db")
-
+const { NotFoundError } = require("../utils/errors")
 
 //GET jobs for loggedin user
-const getJobs = async (req, res) => {
+const getJobs = async (req, res,next) => {
     try {
 
         const jobs = await db.query(
@@ -12,13 +12,12 @@ const getJobs = async (req, res) => {
         )
         res.json(jobs.rows)
     } catch (error) {
-        console.log(error.message)
-        res.status(500).send("Server error")
+        next(error)
     }
 }
 
 //create a job
-const addJob = async (req, res) => {
+const addJob = async (req, res,next) => {
     try {
         const { title, company, location, date_applied, status, } = req.body
         const newJob = await db.query(
@@ -29,14 +28,13 @@ const addJob = async (req, res) => {
         res.json(newJob.rows[0])
 
     } catch (error) {
-        console.log(error.message)
-        res.status(500).send("Server error")
+        next(error)
     }
 
 }
 
 //update jobs
-const updateJob = async (req, res) => {
+const updateJob = async (req, res,next) => {
     try {
         const { title, company, location, date_applied, status, } = req.body
         const { id } = req.params//job id
@@ -45,18 +43,17 @@ const updateJob = async (req, res) => {
             [title, company, location, date_applied, status, id, req.user_id]
         )
         if (updatedJob.rows.length === 0) {
-            return res.status(404).send("Job not found ")
+            throw new NotFoundError("Job not found")
         }
         res.json(updatedJob.rows[0])
 
     } catch (error) {
-        console.log(error.message)
-        res.status(500).send("Server error")
+        next(error)
     }
 }
 
 //delete job by job id
-const deleteJob = async (req, res) => {
+const deleteJob = async (req, res,next) => {
     try {
         const { id } = req.params
         const deletedJob = await db.query(
@@ -64,12 +61,11 @@ const deleteJob = async (req, res) => {
             [id, req.user_id]
         )
         if (deletedJob.rows.length === 0) {
-            return res.status(404).send("Job not found")
+            throw new NotFoundError("Job not found")
         }
         res.json({ message: "Job deleted successfully" })
     } catch (error) {
-        console.log(error.message)
-        res.status(500).send("Server error")
+        next(error)
     }
 }
 

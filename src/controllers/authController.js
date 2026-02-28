@@ -3,6 +3,8 @@
 const db=require("../db")
 const jwt =require("jsonwebtoken")
 const bcrypt =require("bcrypt")
+const { ConflictError, UnauthorizedError } = require("../utils/errors")
+
 
 //helper functions to generate tokens
 const generateAccessToken =(user_id) =>{
@@ -14,7 +16,7 @@ const generateRefreshToken =(user_id)=>{
 }
 
 //Register
-const register = async (req, res) => {
+const register = async (req, res,next) => {
     try {
        
         const {name,email,password}=req.body
@@ -24,7 +26,7 @@ const register = async (req, res) => {
             [email]
         )
         if (existingUser.rows.length >0){
-            return res.status(400).json("User already exists")
+            throw new ConflictError("User already exists")
         }
          //hash password
         const hashedPassword= await bcrypt.hash(password,10)
@@ -44,15 +46,14 @@ const register = async (req, res) => {
         )
          res.json({accessToken,refreshToken})
     } catch (error) {
-        console.log(error.message)
-        res.status(500).send("Server error")
+        next(error) //  pass to error handler
     }
 }
 
 //LOGIN
 
 
-const login = async (req, res) => {
+const login = async (req, res,next) => {
     
     
     const {email,password} =req.body
@@ -64,7 +65,7 @@ const login = async (req, res) => {
         )
         
         if (user.rows.length ===0){
-            return res.status(401).json("Invalid email or password")
+            throw new UnauthorizedError("Invalid credentials")
         }
             //compare passwords
             const validPassword = await bcrypt.compare(
@@ -72,7 +73,7 @@ const login = async (req, res) => {
                 user.rows[0].password
             )
             if (!validPassword){
-                return res.status(401).json("Invalid email or password")
+                throw new UnauthorizedError("Invalid credentials")
             }
 
             const user_id = user.rows[0].user_id
@@ -87,13 +88,12 @@ const login = async (req, res) => {
             res.json({accessToken,refreshToken})
         
     } catch (error) {
-        console.log(error.message)
-        res.status(500).send("Server error")
+        next(error) //  pass to error handler
     }
 }
 
 //Refresh Token -get new acces token
-const refreshToken= async (req,res) =>{
+const refreshToken= async (req,res,next) =>{
     try {
         const {token}=req.body
         if(!token){
@@ -111,7 +111,7 @@ const refreshToken= async (req,res) =>{
         const verified=jwt.verify(token,process.env.JWT_REFRESH_SECRET)
 
         //Generate new access token
-        const accessToken = generateAccesToken(verified.user_id)
+        const accessToken = generateAccessToken(verified.user_id)
         res.json({accessToken})
     } catch (error) {
         console.log(error.message)
@@ -119,14 +119,14 @@ const refreshToken= async (req,res) =>{
     }
 }
 //Logout -delete refresh token from database
-const logout =async(req,res)=>{
+const logout =async(req,res,next)=>{
     try {
         const {token}=req.body
         await db.query(
           "DELETE FROM refresh_tokens WHERE token = $1",
            [token]  
         )
-        res.json(error.message)
+        res.json({message: "Logged out successfully"})
     } catch (error) {
         console.log(error.message)
         res.status(500).send("Server error")
