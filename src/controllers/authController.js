@@ -3,7 +3,7 @@
 const db=require("../db")
 const jwt =require("jsonwebtoken")
 const bcrypt =require("bcrypt")
-const { ConflictError, UnauthorizedError } = require("../utils/errors")
+
 
 
 //helper functions to generate tokens
@@ -44,7 +44,18 @@ const register = async (req, res,next) => {
             "INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES($1,$2, NOW() + INTERVAL '7 days')",
             [user_id,refreshToken]
         )
-         res.json({accessToken,refreshToken})
+         
+
+         //user object
+         res.json({
+             accessToken,
+             refreshToken,
+             user: {
+            user_id: newUser.rows[0].user_id,
+            name: newUser.rows[0].name,
+            email: newUser.rows[0].email
+        }
+        })
     } catch (error) {
         next(error) //  pass to error handler
     }
@@ -56,8 +67,9 @@ const register = async (req, res,next) => {
 const login = async (req, res,next) => {
     
     
-    const {email,password} =req.body
+    
     try {
+        const {email,password} =req.body
         //check if user exists
         const user= await db.query(
             "SELECT * FROM users WHERE email= $1",
@@ -85,7 +97,17 @@ const login = async (req, res,next) => {
                 "INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES($1,$2, NOW() + INTERVAL '7 days')",
                 [user_id, refreshToken]
             )
-            res.json({accessToken,refreshToken})
+           
+            //user object
+            res.json({
+            accessToken,
+            refreshToken,
+            user: {
+                user_id: user.rows[0].user_id,
+                name: user.rows[0].name,
+                email: user.rows[0].email
+            }
+            })
         
     } catch (error) {
         next(error) //  pass to error handler
