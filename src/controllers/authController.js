@@ -5,7 +5,7 @@ const jwt =require("jsonwebtoken")
 const bcrypt =require("bcrypt")
 const crypto = require("crypto")
 const sendPasswordResetEmail = require("../utils/sendEmail")
-
+const { ConflictError, UnauthorizedError } = require("../utils/errors")
 
 //helper functions to generate tokens
 const generateAccessToken =(user_id) =>{
@@ -234,4 +234,66 @@ const resetPassword = async (req, res, next) => {
   }
 }
 
-module.exports = { register, login, refreshToken, logout, forgotPassword, resetPassword }
+//update profile
+
+const updateProfile = async (req, res, next) => {
+  try {
+    const { name, currentPassword, newPassword } = req.body
+    const user_id = req.user_id
+
+    // get current user
+    const user = await db.query(
+      "SELECT * FROM users WHERE user_id = $1",
+      [user_id]
+    )
+    if (user.rows.length === 0) {
+      throw new UnauthorizedError("User not found")
+    }
+
+    let updatedName = user.rows[0].name
+    let updatedPassword = user.rows[0].password
+
+    // update name if provided
+    if (name) {
+      updatedName = name
+    }
+
+    // update password if provided
+    if (newPassword) {
+      // verify current password first
+      if (!currentPassword) {
+        return res.status(400).json({
+          status: "fail",
+          statusCode: 400,
+          message: "Current password is required to set a new password"
+        })
+      }
+
+      const isMatch = await bcrypt.compare(currentPassword, user.rows[0].password)
+      if (!isMatch) {
+        return res.status(400).json({
+          status: "fail",
+          statusCode: 400,
+          message: "Current password is incorrect"
+        })
+      }
+
+      updatedPassword = await bcrypt.hash(newPassword, 10)
+    }
+
+    // update user in database
+    const updatedUser = await db.query(
+      "UPDATE users SET name = $1, password = $2 WHERE user_id = $3 RETURNING user_id, name, email",
+      [updatedName, updatedPassword, user_id]
+    )
+
+    res.json({
+      message: "Profile updated successfully",
+      user: updatedUser.rows[0]
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+module.exports = { register, login, refreshToken, logout, forgotPassword, resetPassword, updateProfile }

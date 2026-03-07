@@ -39,5 +39,10 @@ const resetPasswordSchema = Joi.object({
   password: Joi.string().min(6).required()
 })
 
+const updateProfileSchema = Joi.object({
+  name: Joi.string().min(3).max(50).optional(),
+  currentPassword: Joi.string().optional(),
+  newPassword: Joi.string().min(6).optional()
+}).or("name", "newPassword") // at least one field required
 
-module.exports = { validate, registerSchema, loginSchema, jobSchema ,resetPasswordSchema,forgotPasswordSchema}
+module.exports = { validate, registerSchema, loginSchema, jobSchema ,resetPasswordSchema,forgotPasswordSchema,updateProfileSchema}
