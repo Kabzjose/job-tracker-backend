@@ -31,7 +31,13 @@ const validate = (schema) => (req, res, next) => {
   next()
 }
 
+const forgotPasswordSchema = Joi.object({
+  email: Joi.string().email().required()
+})
+
+const resetPasswordSchema = Joi.object({
+  password: Joi.string().min(6).required()
+})
 
 
-
-module.exports = { validate, registerSchema, loginSchema, jobSchema }
+module.exports = { validate, registerSchema, loginSchema, jobSchema ,resetPasswordSchema,forgotPasswordSchema}

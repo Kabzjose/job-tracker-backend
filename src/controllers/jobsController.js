@@ -1,6 +1,6 @@
 
 const db = require("../db")
-const { NotFoundError } = require("../utils/errors")
+
 
 //GET jobs for loggedin user
 const getJobs = async (req, res,next) => {

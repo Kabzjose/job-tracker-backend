@@ -3,7 +3,8 @@
 const db=require("../db")
 const jwt =require("jsonwebtoken")
 const bcrypt =require("bcrypt")
-
+const crypto = require("crypto")
+const sendPasswordResetEmail = require("../utils/sendEmail")
 
 
 //helper functions to generate tokens
@@ -155,4 +156,82 @@ const logout =async(req,res,next)=>{
     }
 }
 
-module.exports={register,login,refreshToken,logout}
+
+
+// FORGOT PASSWORD
+const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body
+
+    // check if user exists
+    const user = await db.query(
+      "SELECT * FROM users WHERE email = $1", [email]
+    )
+    if (user.rows.length === 0) {
+      // don't reveal if email exists or not for security
+      return res.json({ message: "If that email exists you will receive a reset link" })
+    }
+
+    // generate reset token
+    const resetToken = crypto.randomBytes(32).toString("hex")
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+
+    // delete any existing token for this user
+    await db.query(
+      "DELETE FROM password_reset_tokens WHERE user_id = $1",
+      [user.rows[0].user_id]
+    )
+
+    // save new token to database
+    await db.query(
+      "INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES($1,$2,$3)",
+      [user.rows[0].user_id, resetToken, expiresAt]
+    )
+
+    // send email
+    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`
+    await sendPasswordResetEmail(email, resetUrl)
+
+    res.json({ message: "If that email exists you will receive a reset link" })
+  } catch (error) {
+    next(error)
+  }
+}
+
+// RESET PASSWORD
+const resetPassword = async (req, res, next) => {
+  try {
+    const { token } = req.params
+    const { password } = req.body
+
+    // find token in database
+    const resetToken = await db.query(
+      "SELECT * FROM password_reset_tokens WHERE token = $1 AND expires_at > NOW()",
+      [token]
+    )
+    if (resetToken.rows.length === 0) {
+      return res.status(400).json({ message: "Invalid or expired reset token" })
+    }
+
+    // hash new password
+    const hashedPassword = await bcrypt.hash(password, 10)
+
+    // update password
+    await db.query(
+      "UPDATE users SET password = $1 WHERE user_id = $2",
+      [hashedPassword, resetToken.rows[0].user_id]
+    )
+
+    // delete used token
+    await db.query(
+      "DELETE FROM password_reset_tokens WHERE token = $1",
+      [token]
+    )
+
+    res.json({ message: "Password reset successful" })
+  } catch (error) {
+    next(error)
+  }
+}
+
+module.exports = { register, login, refreshToken, logout, forgotPassword, resetPassword }
