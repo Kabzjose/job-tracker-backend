@@ -10,7 +10,7 @@ const app=express()
 
 //| http://localhost:5173
 app.use(cors({
-  origin: "https://job-tracker-wheat-kappa.vercel.app/ ",
+  origin: "https://job-tracker-wheat-kappa.vercel.app ",
   credentials: true
 }))
 app.use(express.json())
