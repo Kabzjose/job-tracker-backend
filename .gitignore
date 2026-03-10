@@ -1,34 +1,3 @@
-# dependencies
-node_modules/
-
-# environment variables
+# .gitignore
 .env
-.env.local
-.env.development
-.env.production
-
-# logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# build folders
-dist/
-build/
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# editor folders
-.vscode/
-.idea/
-
-# cache
-.cache/
-.parcel-cache/
-
-# optional
-coverage/
+node_modules

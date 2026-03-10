@@ -8,9 +8,9 @@ const errorHandler = require("./middleware/errorHandler")
 
 const app=express()
 
-//https://job-tracker-wheat-kappa.vercel.app http://localhost:5173
+// http://localhost:5173 
 app.use(cors({
-  origin: "http://localhost:5173 ",
+  origin: "https://job-tracker-wheat-kappa.vercel.app ",
   credentials: true
 }))
 app.use(express.json())
